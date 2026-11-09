@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Архив Фонда | Совершенно секретно</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap');
+
+  :root {
+    --paper-bg: #e3d5b8;
+    --ink-color: #2b1d14;
+    --blood-red: #7a1f1a;
+    --border-color: #4a3b2c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body { 
+    font-family: 'Courier Prime', monospace;
+    background-color: #0d0a08;
+    background-image: 
+      radial-gradient(circle at center, rgba(20,15,10,0.8) 0%, rgba(0,0,0,1) 100%),
+      url('https://www.transparenttextures.com/patterns/dark-leather.png');
+    color: var(--ink-color);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* --- МЕРЦАЮЩАЯ ЛАМПОЧКА --- */
+  .lamp-container {
+    position: fixed;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wire {
+    width: 2px;
+    height: 60px;
+    background: #333;
+  }
+  .bulb {
+    width: 40px; height: 50px;
+    background: #fff3b0;
+    border-radius: 50% 50% 10% 10%;
+    box-shadow: 0 0 20px 10px rgba(255, 243, 176, 0.6);
+    position: relative;
+    /* Эффект мерцания */
+    animation: flicker 4s infinite alternate;
+  }
+  .bulb::after {
+    content: '';
+    position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+    width: 20px; height: 10px; background: #555;
+    border-radius: 2px;
+  }
+  /* Свет от лампочки */
+  .light-beam {
+    position: fixed;
+    top: 100px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100vh;
+    background: radial-gradient(circle at 50% 0%, rgba(255, 243, 176, 0.15) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 5;
+    animation: flicker 4s infinite alternate;
+  }
+
+  @keyframes flicker {
+    0%, 20%, 40%, 60%, 80% { opacity: 1; box-shadow: 0 0 20px 10px rgba(255, 243, 176, 0.6); }
+    10%, 30%, 50%, 70%, 90% { opacity: 0.3; box-shadow: 0 0 5px 2px rgba(255, 243, 176, 0.2); }
+    35% { opacity: 0.1; }
+    45% { opacity: 1; }
+    85% { opacity: 0.2; }
+  }
+
+  /* --- БОКОВАЯ ПАНЕЛЬ --- */
+  .sidebar {
+    width: 320px;
+    background-color: #2c221b;
+    border-right: 5px solid #110d0a;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    position: absolute; height: 100%; z-index: 10;
+    box-shadow: 5px 0 20px rgba(0,0,0,0.8);
+  }
+  .sidebar.closed { transform: translateX(-100%); }
+  
+  .sidebar-header {
+    padding: 20px;
+    background: #1f1712;
+    border-bottom: 2px solid #000;
+    text-align: center;
+    box-shadow: inset 0 0 10px #000;
+  }
+  .sidebar-header h1 { 
+    font-family: 'Special Elite', cursive; 
+    font-size: 24px; color: #c4b5a0; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .sidebar-header p { font-size: 10px; color: var(--blood-red); font-weight: bold; margin-top: 5px; }
+
+  .search-box { padding: 15px; background: #1f1712; border-bottom: 2px solid #000; }
+  .search-box input {
+    width: 100%; background: #110d0a; border: 1px solid var(--border-color);
+    color: #c4b5a0; padding: 10px; font-family: 'Courier Prime', monospace; outline: none;
+  }
+  .search-box input:focus { border-color: var(--blood-red); }
+
+  .list-container { flex-grow: 1; overflow-y: auto; }
+  
+  .scp-item {
+    padding: 15px 20px; border-bottom: 1px dashed #4a3b2c; cursor: pointer;
+    font-family: 'Courier Prime', monospace; color: #b0a08c; transition: all 0.2s;
+    background: #2c221b;
+  }
+  .scp-item:hover { background: #3d2f25; color: #fff; padding-left: 25px; }
+  .scp-item.active { background: #110d0a; border-left: 5px solid var(--blood-red); color: #fff; }
+  .scp-item .class { font-size: 10px; color: var(--blood-red); display: block; margin-top: 5px; text-transform: uppercase; font-weight: bold;}
+
+  /* --- ОСНОВНОЙ КОНТЕНТ --- */
+  .main-content {
+    flex-grow: 1; margin-left: 320px; padding: 80px 40px 40px; /* Отступ сверху для лампочки */
+    overflow-y: auto; position: relative; transition: margin-left 0.3s ease;
+  }
+  .main-content.full { margin-left: 0; }
+
+  .menu-btn {
+    display: none; position: fixed; top: 80px; left: 15px;
+    background: #2c221b; border: 2px solid var(--blood-red); color: #c4b5a0;
+    padding: 10px 15px; font-family: 'Courier Prime', monospace;
+    z-index: 20; cursor: pointer; box-shadow: 2px 2px 10px #000;
+  }
+
+  /* Бумажный документ */
+  .document {
+    max-width: 850px; margin: 0 auto;
+    background-color: var(--paper-bg);
+    background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+    padding: 50px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(139, 109, 76, 0.4);
+    border-radius: 2px; position: relative; animation: fadeIn 0.6s ease;
+    min-height: 600px;
+  }
+  
+  /* Пятна крови на фоне бумаги */
+  .document::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    background: 
+      radial-gradient(circle at 10% 20%, rgba(122, 31, 26, 0.15) 0%, transparent 15%),
+      radial-gradient(circle at 85% 80%, rgba(122, 31, 26, 0.2) 0%, transparent 25%),
+      radial-gradient(circle at 50% 50%, rgba(122, 31, 26, 0.05) 0%, transparent 40%);
+    box-shadow: inset 0 0 50px rgba(60, 40, 20, 0.5);
+    z-index: 0;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  .doc-content { position: relative; z-index: 1; }
+
+  .doc-header {
+    border-bottom: 3px double var(--ink-color);
+    padding-bottom: 20px; margin-bottom: 30px; text-align: center;
+  }
+  .doc-header h2 {
+    font-family: 'Special Elite', cursive; font-size: 40px;
+    color: var(--ink-color); letter-spacing: 2px; text-transform: uppercase;
+  }
+  
+  .stamp {
+    position: absolute; top: 30px; right: 30px;
+    border: 4px solid var(--blood-red); color: var(--blood-red);
+    padding: 5px 15px; font-family: 'Courier Prime', monospace; font-weight: bold;
+    font-size: 16px; text-transform: uppercase; transform: rotate(-15deg);
+    opacity: 0.7; letter-spacing: 2px; border-radius: 4px; z-index: 2;
+  }
+  
+  .class-info {
+    font-family: 'Courier Prime', monospace; font-size: 14px;
+    color: var(--blood-red); margin-top: 15px; text-transform: uppercase;
+  }
+
+  .image-container { text-align: center; margin: 30px 0; }
+  .image-container img {
+    max-width: 100%; border: 10px solid #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    filter: sepia(0.8) contrast(1.2) grayscale(0.3) brightness(0.9);
+    transform: rotate(-1deg);
+  }
+  .image-caption {
+    font-family: 'Courier Prime', monospace; font-size: 12px; color: #5c4a3a;
+    margin-top: 10px; text-align: center; font-style: italic;
+  }
+
+  .doc-text {
+    font-size: 16px; line-height: 1.7; color: var(--ink-color); text-align: justify;
+  }
+  .doc-text p { margin-bottom: 20px; }
+  .doc-text p::first-letter {
+    font-family: 'Special Elite', cursive; font-size: 30px; color: var(--blood-red);
+  }
+
+  /* Кнопки навигации по страницам */
+  .page-nav {
+    display: flex; justify-content: space-between; margin-top: 40px;
+    border-top: 1px dashed var(--border-color); padding-top: 20px;
+  }
+  .page-btn {
+    background: transparent; border: 2px solid var(--ink-color);
+    color: var(--ink-color); padding: 10px 20px;
+    font-family: 'Courier Prime', monospace; font-weight: bold;
+    cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+  }
+  .page-btn:hover { background: var(--ink-color); color: var(--paper-bg); }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .placeholder {
+    height: 100%; display: flex; justify-content: center; align-items: center;
+    text-align: center; color: #5c4a3a; font-family: 'Special Elite', cursive;
+    font-size: 24px; text-shadow: 2px 2px 0 #000;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; }
+    .main-content { margin-left: 0; padding: 120px 10px 10px; }
+    .menu-btn { display: block; }
+    .document { padding: 25px 15px; }
+    .doc-header h2 { font-size: 28px; }
+    .stamp { top: 15px; right: 15px; font-size: 12px; padding: 3px 8px; border-width: 2px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Лампочка -->
+<div class="lamp-container">
+  <div class="wire"></div>
+  <div class="bulb"></div>
+</div>
+<div class="light-beam"></div>
+
+<!-- Кнопка меню для телефона -->
+<button class="menu-btn" onclick="toggleSidebar()">🗄️ АРХИВ</button>
+
+<!-- Боковая панель -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>Архив Фонда</h1>
+    <p>SECURE. CONTAIN. PROTECT.</p>
+  </div>
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="Поиск по номеру..." oninput="renderList()">
+  </div>
+  <div class="list-container" id="scp-list"></div>
+</div>
+
+<!-- Основной экран -->
+<div class="main-content" id="main-content">
+  <div class="placeholder" id="placeholder">
+    ⚠️<br>ДОСТУП РАЗРЕШЕН<br>Выберите дело из архива.
+  </div>
+  <div class="document" id="document" style="display: none;">
+    <!-- Сюда рендерится документ -->
+  </div>
+</div>
+
+<script>
+// ССЫЛКА НА ТАБЛИЦУ (уже в формате CSV)
+const CSV_URL = "https://docs.google.com/spreadsheets/d/1YMC34wV0WWSLCzVOzaQahUgq8xjqXEDEuXbLfPWKE9s/export?format=csv";
+
+let allObjects = [];
+let currentObject = null;
+let currentPage = 1; // 1 или 2
+
+async function loadData() {
+  try {
+    const response = await fetch(CSV_URL);
+    const csvText = await response.text();
+    const rows = parseCSV(csvText);
+
+    const headers = rows[0].map(h => h.trim().toLowerCase());
+    const idxNum = headers.indexOf('номер');
+    const idxClass = headers.indexOf('класс');
+    const idxDesc = headers.indexOf('описание');
+    const idxPhoto1 = headers.indexOf('фото1');
+    const idxPhoto2 = headers.indexOf('фото2');
+
+    allObjects = rows.slice(1)
+      .filter(row => row[idxNum])
+      .map(row => ({
+        number: row[idxNum].trim(),
+        class: row[idxClass] ? row[idxClass].trim() : "Неизвестно",
+        desc: row[idxDesc] || "",
+        photo1: row[idxPhoto1] || "",
+        photo2: row[idxPhoto2] || ""
+      }));
+
+    renderList();
+  } catch (error) {
+    document.getElementById('scp-list').innerHTML = "<p style='padding:20px; color:red;'>Ошибка загрузки данных.</p>";
+  }
+}
+
+function parseCSV(text) {
+  const rows = []; let row = []; let field = ''; let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function renderList() {
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const container = document.getElementById('scp-list');
+  
+  const filtered = allObjects.filter(obj => obj.number.toLowerCase().includes(query));
+
+  if (filtered.length === 0) {
+    container.innerHTML = "<p style='padding:20px; color:#5c4a3a;'>Дела не найдены.</p>";
+    return;
+  }
+
+  container.innerHTML = filtered.map(obj => `
+    <div class="scp-item ${currentObject && currentObject.number === obj.number ? 'active' : ''}" onclick="openObject('${obj.number.replace(/'/g, "\\'")}')">
+      ${obj.number}
+      <span class="class">Класс: ${obj.class}</span>
+    </div>
+  `).join('');
+}
+
+function openObject(number) {
+  const obj = allObjects.find(o => o.number === number);
+  if (!obj) return;
+  
+  currentObject = obj;
+  currentPage = 1; // Всегда начинаем с первой страницы
+  
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('closed');
+    document.getElementById('main-content').classList.add('full');
+  }
+  
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('document').style.display = 'block';
+
+  renderPage();
+  renderList();
+}
+
+// Рендер страницы (1 - фото, 2 - текст)
+function renderPage() {
+  const docContainer = document.getElementById('document');
+  const obj = currentObject;
+
+  let contentHTML = `
+    <div class="stamp">СОВЕРШЕННО СЕКРЕТНО</div>
+    <div class="doc-content">
+      <div class="doc-header">
+        <h2>ДЕЛО № ${obj.number.replace('SCP-', '')}</h2>
+        <div class="class-info">Класс объекта: ${obj.class}</div>
+      </div>
+  `;
+
+  if (currentPage === 1) {
+    // СТРАНИЦА 1: Главное фото
+    contentHTML += `
+      ${obj.photo1 ? `
+        <div class="image-container">
+          <img src="${obj.photo1}" alt="${obj.number}" onerror="this.style.display='none'">
+          <div class="image-caption">Снимок 1. Основной вид объекта.</div>
+        </div>
+      ` : '<p style="text-align:center; color:#777;">Фотография отсутствует в архиве.</p>'}
+    `;
+  } else {
+    // СТРАНИЦА 2: Текст и второе фото
+    contentHTML += `
+      <div class="doc-text">
+        <p>${obj.desc.replace(/\n/g, '<br>')}</p>
+      </div>
+      ${obj.photo2 ? `
+        <div class="image-container" style="margin-top: 50px;">
+          <img src="${obj.photo2}" alt="${obj.number} - Фото 2" onerror="this.style.display='none'">
+          <div class="image-caption">Снимок 2. Приложение к делу.</div>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // Кнопки навигации
+  contentHTML += `
+      <div class="page-nav">
+        <button class="page-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>← Назад</button>
+        <button class="page-btn" onclick="changePage(1)" ${currentPage === 2 ? 'disabled' : ''}>Далее →</button>
+      </div>
+    </div>
+  `;
+
+  docContainer.innerHTML = contentHTML;
+  document.getElementById('main-content').scrollTop = 0;
+}
+
+function changePage(direction) {
+  currentPage += direction;
+  if (currentPage < 1) currentPage = 1;
+  if (currentPage > 2) currentPage = 2;
+  renderPage();
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main-content');
+  sidebar.classList.toggle('closed');
+  main.classList.toggle('full');
+}
+
+loadData();
+
+if (window.innerWidth > 768) {
+  document.getElementById('sidebar').classList.remove('closed');
+}
+</script>
+</body>
+  </html>
